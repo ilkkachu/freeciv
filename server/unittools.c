@@ -2497,24 +2497,42 @@ static void do_nuke_tile(struct player *pplayer, struct tile *ptile)
   struct city *pcity = NULL;
 
   unit_list_iterate_safe(ptile->units, punit) {
-    notify_player(unit_owner(punit), ptile, E_UNIT_LOST_MISC, ftc_server,
-                  _("Your %s was nuked by %s."),
-                  unit_tile_link(punit),
-                  pplayer == unit_owner(punit)
-                  ? _("yourself")
-                  : nation_plural_for_player(pplayer));
+    int damage = 10 + fc_rand(30); /* 10 to 39 HP lost */
+
     if (unit_owner(punit) != pplayer) {
       notify_player(pplayer, ptile, E_UNIT_WIN_ATT, ftc_server,
                     _("The %s %s was nuked."),
                     nation_adjective_for_player(unit_owner(punit)),
                     unit_tile_link(punit));
     }
-    wipe_unit(punit, ULR_NUKE, pplayer);
+    
+    punit->hp = punit->hp - damage;
+    if (punit->hp <= 0) {
+      /* bye bye */
+      punit->hp = 0;
+      notify_player(unit_owner(punit), ptile, E_UNIT_LOST_MISC, ftc_server,
+                    _("Your %s was nuked by %s."),
+                    unit_tile_link(punit),
+                    pplayer == unit_owner(punit)
+                    ? _("yourself")
+                    : nation_plural_for_player(pplayer));
+      wipe_unit(punit, ULR_NUKE, pplayer);
+    } else {
+      /* just a scratch */
+      notify_player(unit_owner(punit), ptile, E_UNIT_WIN, ftc_server,
+                    _("Your %s was damaged in a nuclear explosion by %s."),
+                    unit_tile_link(punit),
+                    pplayer == unit_owner(punit)
+                    ? _("yourself")
+                    : nation_plural_for_player(pplayer));
+      send_unit_info(NULL, punit);
+    }
   } unit_list_iterate_safe_end;
 
   pcity = tile_city(ptile);
 
   if (pcity) {
+    int citysize, megadeaths;
     notify_player(city_owner(pcity), ptile, E_CITY_NUKED, ftc_server,
                   _("%s was nuked by %s."),
                   city_link(pcity),
@@ -2527,8 +2545,25 @@ static void do_nuke_tile(struct player *pplayer, struct tile *ptile)
                     _("You nuked %s."),
                     city_link(pcity));
     }
+   
+    /* destroy improvements, 50 % chance each */
+    city_built_iterate(pcity, pimprove) {
+      /* only destroy regular improvements, not wonders, and not those
+       * that are especially protected from sabotage (e.g. Walls, SDI) */
+      if (is_improvement(pimprove) && pimprove->sabotage == 100 && fc_rand(2) == 1) {
+        notify_player(city_owner(pcity), city_tile(pcity), E_IMP_SOLD, ftc_server,
+                      _("%s destroyed in nuclear explosion!"),
+                      improvement_name_translation(pimprove));
+        city_remove_improvement(pcity, pimprove);
+      } 
+    } city_built_iterate_end;
 
-    city_reduce_size(pcity, city_size_get(pcity) / 2, pplayer, "nuke");
+    /* reduce population randomly by 40 % to 60 % */
+    citysize = city_size_get(pcity);
+    megadeaths = citysize * 4 / 10 + fc_rand(citysize * 2 / 10);
+    city_reduce_size(pcity, megadeaths, pplayer, "nuke");
+    
+    send_city_info(NULL, pcity);
   }
 
   if (fc_rand(2) == 1) {
