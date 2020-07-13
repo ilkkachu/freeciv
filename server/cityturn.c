@@ -588,6 +588,8 @@ void update_city_activities(struct player *pplayer)
     /* Iterate over cities in a random order. */
     while (i > 0) {
       r = fc_rand(i);
+      /* sell buildings that have somehow lost their requirements */
+      city_remove_invalid_buildings(cities[r]);
       /* update unit upkeep */
       city_units_upkeep(cities[r]);
       update_city_activity(cities[r]);

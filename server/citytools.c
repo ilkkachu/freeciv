@@ -2972,6 +2972,47 @@ void city_map_update_all_cities_for_player(struct player *pplayer)
   } city_list_iterate_end;
 }
 
+
+/**************************************************************************
+  Sell all buildings in pcity that don't meet their requirements,
+  _except that_ technology and improvement requirements are not checked.
+  This is meant to generalize city_landlocked_sell_coastal_improvements()
+  and to be called each turn when the city is processed. The exception for
+  tech and improvement reqs is to keep existing behaviour in most cases.
+  
+  This should still be generalized by e.g. splitting the reqs vector
+  in two: one for build-time reqs, and one for reqs checked every turn
+**************************************************************************/
+void city_remove_invalid_buildings(struct city *pcity)
+{
+  struct player *pplayer = city_owner(pcity);
+  city_built_iterate(pcity, pimprove) {
+    if (!can_city_sell_building(pcity, pimprove)) {
+      continue;
+    }
+
+    requirement_vector_iterate(&pimprove->reqs, preq) {
+      if (   VUT_ADVANCE != preq->source.kind
+          && VUT_IMPROVEMENT != preq->source.kind
+          && !is_req_active(city_owner(pcity), NULL, pcity, NULL,
+                            pcity->tile, NULL, NULL, NULL, NULL,
+                            preq, TRUE)) {
+        int price = impr_sell_gold(pimprove);
+
+        do_sell_building(pplayer, pcity, pimprove);
+        
+        notify_player(pplayer, city_tile(pcity), E_IMP_SOLD, ftc_server,
+                      PL_("%s is selling %s (not meeting requirements) for %d.",
+                          "%s is selling %s (not meeting requirements) for %d.",
+                          price),
+                      city_link(pcity),
+                      improvement_name_translation(pimprove),
+                      price);
+      }
+    } requirement_vector_iterate_end;
+  } city_built_iterate_end;
+}
+
 /**************************************************************************
   For each city adjacent to ptile, check all the buildings in the city.
   Any which have unmet terrain requirements will be sold.  This is called
