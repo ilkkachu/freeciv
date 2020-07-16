@@ -3531,6 +3531,9 @@ static void game_load_internal(struct section_file *file)
     game.server.razechance =
       secfile_lookup_int_default(file, GAME_DEFAULT_RAZECHANCE, "game.razechance");
 
+    game.server.rehome_on_cityloss =
+      secfile_lookup_bool_default(file, GAME_DEFAULT_REHOME_ON_CITYLOSS, "game.rehome_on_cityloss");
+    
     game.server.save_nturns =
       secfile_lookup_int_default(file, GAME_DEFAULT_SAVETURNS, "game.save_nturns");
 

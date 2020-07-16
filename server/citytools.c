@@ -1832,6 +1832,25 @@ void remove_city(struct city *pcity)
   sync_cities();
 }
 
+void rehome_city_units(struct city *pcity)
+{
+  struct player *cplayer = city_owner(pcity);
+  struct city *nearest_city = NULL;
+  
+  /* Transfer units supported by this city to another nearby city */
+  nearest_city = find_closest_city(city_tile(pcity), pcity, cplayer, 
+                                   FALSE, FALSE, FALSE, TRUE, FALSE, NULL);
+
+  if (!nearest_city) {
+    /* No place to move to any more, tough luck. The calling function
+     * will call wipe_city() or such to deal with this. */
+    return;
+  }
+
+  transfer_city_units(cplayer, cplayer, pcity->units_supported,
+                      nearest_city, pcity, -1, TRUE);
+}
+
 /**************************************************************************
   Handle unit entering city. During peace may enter peacefully, during
   war conquers city.
@@ -1888,6 +1907,12 @@ void unit_enter_city(struct unit *punit, struct city *pcity, bool passenger)
     notify_player(cplayer, city_tile(pcity), E_CITY_LOST, ftc_server,
                   _("%s has been destroyed by %s."), 
                   city_tile_link(pcity), player_name(pplayer));
+                 
+    /* Transfer supported units to another city */
+    if (game.server.rehome_on_cityloss) {
+      rehome_city_units(pcity);
+    }
+                  
     script_server_signal_emit("city_destroyed", 3,
                               API_TYPE_CITY, pcity,
                               API_TYPE_PLAYER, cplayer,
@@ -1967,6 +1992,11 @@ void unit_enter_city(struct unit *punit, struct city *pcity, bool passenger)
   }
 
   steal_a_tech(pplayer, cplayer, A_UNSET);
+
+  /* Transfer supported units to another city */
+  if (game.server.rehome_on_cityloss) {
+    rehome_city_units(pcity);
+  }
 
   /* We transfer the city first so that it is in a consistent state when
    * the size is reduced. */

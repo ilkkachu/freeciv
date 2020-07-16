@@ -2283,6 +2283,14 @@ static struct setting settings[] = {
               "will be restricted for enemy units."), NULL, NULL,
            GAME_DEFAULT_RESTRICTINFRA)
 
+  GEN_BOOL("rehome_on_cityloss", game.server.rehome_on_cityloss ,
+          SSET_RULES_FLEXIBLE, SSET_MILITARY, SSET_RARE, SSET_TO_CLIENT,
+          N_("Rehome supported units when city is lost"),
+          N_("If enabled, units supported by a city that is conquered "
+             "(or destroyed while being conquered) will be rehomed to "
+             "the city nearest to their old home instead of being lost."),
+          NULL, NULL, GAME_DEFAULT_OCCUPYCHANCE)
+
   GEN_BOOL("unreachableprotects", game.info.unreachable_protects,
            SSET_RULES_FLEXIBLE, SSET_MILITARY, SSET_RARE, SSET_TO_CLIENT,
            N_("Does unreachable unit protect reachable ones"),

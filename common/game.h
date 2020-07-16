@@ -168,6 +168,8 @@ struct civ_game {
       int pingtimeout;
       int ransom_gold;
       int razechance;
+      bool rehome_on_cityloss;
+
       unsigned revealmap;
       int revolution_length;
       int save_compress_level;
@@ -495,6 +497,8 @@ extern struct civ_game game;
 #define GAME_DEFAULT_RAZECHANCE      20
 #define GAME_MIN_RAZECHANCE          0
 #define GAME_MAX_RAZECHANCE          100
+
+#define GAME_DEFAULT_REHOME_ON_CITYLOSS      FALSE
 
 #define GAME_DEFAULT_REVEALMAP       REVEAL_MAP_NONE
 
