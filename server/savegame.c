@@ -3603,6 +3603,11 @@ static void game_load_internal(struct section_file *file)
     game.info.restrictinfra =
       secfile_lookup_bool_default(file, GAME_DEFAULT_RESTRICTINFRA,
                                   "game.restrictinfra");
+                                  
+    game.info.allow_rehome_unhomed =
+      secfile_lookup_bool_default(file, GAME_DEFAULT_REHOME_UNHOMED,
+                                  "game.allow_rehome_unhomed");
+
     game.server.contactturns =
       secfile_lookup_int_default(file, GAME_DEFAULT_CONTACTTURNS,
 				 "game.contactturns");

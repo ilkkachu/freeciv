@@ -547,6 +547,7 @@ PACKET_GAME_INFO = 16; sc, is-info
   STRING calendar_fragment_name[MAX_CALENDAR_FRAGMENTS][MAX_LEN_NAME];
   BOOL civil_war_enabled;
   BOOL paradrop_to_transport;
+  BOOL allow_rehome_unhomed;
 end
 
 # This cannot have is-info set. Sending the same value a second time after a

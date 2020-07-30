@@ -320,6 +320,7 @@ static void game_defaults(void)
   game.info.rapturedelay     = GAME_DEFAULT_RAPTUREDELAY;
   game.info.disasters        = GAME_DEFAULT_DISASTERS;
   game.info.restrictinfra    = GAME_DEFAULT_RESTRICTINFRA;
+  game.info.allow_rehome_unhomed = GAME_DEFAULT_REHOME_UNHOMED;
   game.info.sciencebox       = GAME_DEFAULT_SCIENCEBOX;
   game.info.shieldbox        = GAME_DEFAULT_SHIELDBOX;
   game.info.skill_level      = GAME_DEFAULT_SKILL_LEVEL;

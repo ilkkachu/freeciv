@@ -437,8 +437,11 @@ bool can_unit_change_homecity_to(const struct unit *punit,
    * 2. The unit must be inside the city it is rehoming to.
    * 3. Of course you can only have your own cities as homecity.
    * 4. You can't rehome to the current homecity. */
+  log_verbose("game.server.killunhomed = %d\n", game.server.killunhomed);
+  log_verbose("game.info.allow_rehome_unhomed = %d\n", game.info.allow_rehome_unhomed);
   return (punit && pcity
-	  && punit->homecity > 0
+/* 	  && punit->homecity > 0 */
+	  && ( punit->homecity > 0 || game.info.allow_rehome_unhomed )
 	  && acity
 	  && city_owner(acity) == unit_owner(punit)
 	  && punit->homecity != acity->id);

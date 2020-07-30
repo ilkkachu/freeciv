@@ -2283,6 +2283,14 @@ static struct setting settings[] = {
               "will be restricted for enemy units."), NULL, NULL,
            GAME_DEFAULT_RESTRICTINFRA)
 
+  GEN_BOOL("allow_rehome_unhomed", game.info.allow_rehome_unhomed,
+           SSET_RULES_FLEXIBLE, SSET_MILITARY, SSET_RARE, SSET_TO_CLIENT,
+           N_("Allow rehoming units with no home city"),
+           N_("If this option is enabled, units with no home city can be"
+              "rehomed at any city like normal units. Should probably be"
+              "only used with killunhomed > 0."), NULL, NULL,
+           GAME_DEFAULT_REHOME_UNHOMED)
+
   GEN_BOOL("rehome_on_cityloss", game.server.rehome_on_cityloss ,
           SSET_RULES_FLEXIBLE, SSET_MILITARY, SSET_RARE, SSET_TO_CLIENT,
           N_("Rehome supported units when city is lost"),
