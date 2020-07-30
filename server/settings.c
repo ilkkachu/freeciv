@@ -2014,6 +2014,17 @@ static struct setting settings[] = {
              "percentage chance to be destroyed."), NULL, NULL, NULL,
           GAME_MIN_RAZECHANCE, GAME_MAX_RAZECHANCE, GAME_DEFAULT_RAZECHANCE)
 
+  GEN_INT("nuke_improvements", game.server.nuke_improvements,
+          SSET_RULES_FLEXIBLE, SSET_MILITARY, SSET_RARE, SSET_TO_CLIENT,
+          N_("Chance of a city improvement getting destroyed when city is nuked"),
+          N_("If set to 0, nukes will not destroy city improvements (default). "
+             "If set to 100, all city improvements will be destroyed when nuked. "
+             "Wonders and improvements that are hard to sabotage (like City Walls) "
+             "are always left intact."),
+          NULL, NULL, NULL,
+          GAME_MIN_NUKE_IMPROVEMENTS, GAME_MAX_NUKE_IMPROVEMENTS, 
+          GAME_DEFAULT_NUKE_IMPROVEMENTS)
+
   GEN_INT("occupychance", game.server.occupychance,
           SSET_RULES, SSET_MILITARY, SSET_RARE, SSET_TO_CLIENT,
           N_("Chance of moving into tile after attack"),
