@@ -2986,190 +2986,190 @@ static void update_city_activity(struct city *pcity)
   }
 
 
-    /* ------------------------------------------------------------------------
-     * Calculate history first, before builds and other things change it */
-    pcity->history += city_history_gain(pcity);
+  /* ------------------------------------------------------------------------
+   * Calculate history first, before builds and other things change it */
+  pcity->history += city_history_gain(pcity);
 
-    /* History can decrease, but never go below zero */
-    pcity->history = MAX(pcity->history, 0);
+  /* History can decrease, but never go below zero */
+  pcity->history = MAX(pcity->history, 0);
 
 
-    /* ------------------------------------------------------------------------
-     * Celebration. Surpluses should already have been calculated taking this into
-     * account, but it makes sense to print the message first.
-     *
-     * Happens before building. */
-    
-    if (city_celebrating(pcity)) {
-      pcity->rapture++;
-      if (pcity->rapture == 1) {
-        notify_player(pplayer, city_tile(pcity), E_CITY_LOVE, ftc_server,
-                      _("Celebrations in your honor in %s."),
-                      city_link(pcity));
-      }
-    } else {
-      if (pcity->rapture != 0) {
-        notify_player(pplayer, city_tile(pcity), E_CITY_NORMAL, ftc_server,
-                      _("Celebrations canceled in %s."),
-                      city_link(pcity));
-      }
-      pcity->rapture = 0;
+  /* ------------------------------------------------------------------------
+   * Celebration. Surpluses should already have been calculated taking this into
+   * account, but it makes sense to print the message first.
+   *
+   * Happens before building. */
+  
+  if (city_celebrating(pcity)) {
+    pcity->rapture++;
+    if (pcity->rapture == 1) {
+      notify_player(pplayer, city_tile(pcity), E_CITY_LOVE, ftc_server,
+                    _("Celebrations in your honor in %s."),
+                    city_link(pcity));
     }
-    pcity->was_happy = city_happy(pcity);
+  } else {
+    if (pcity->rapture != 0) {
+      notify_player(pplayer, city_tile(pcity), E_CITY_NORMAL, ftc_server,
+                    _("Celebrations canceled in %s."),
+                    city_link(pcity));
+    }
+    pcity->rapture = 0;
+  }
+  pcity->was_happy = city_happy(pcity);
 
-    /* ------------------------------------------------------------------------
-     * Add Gold and Science output. Happens before building.
-     *
-     * New techs are _not_ invented here yet, so this shouldn't change any production values */
+  /* ------------------------------------------------------------------------
+   * Add Gold and Science output. Happens before building.
+   *
+   * New techs are _not_ invented here yet, so this shouldn't change any production values */
 
-    update_bulbs(pplayer, pcity->prod[O_SCIENCE], FALSE);
+  update_bulbs(pplayer, pcity->prod[O_SCIENCE], FALSE);
 
-    /* Update the treasury, paying upkeeps and checking running out
-     * of gold based on the ruleset setting 'game.info.gold_upkeep_style':
-     * GOLD_UPKEEP_CITY: Cities pay for buildings and units and deficit
-     *                   is checked right here.
-     * GOLD_UPKEEP_MIXED: Cities pay only for buildings; the nation pays
-     *                    for units after all cities are processed.
-     * GOLD_UPKEEP_NATION: The nation pays for buildings and units 
-     *                     only after all cities are processed.
-     *
-     * city_support() in city.c sets pcity->usage[O_GOLD] (and hence
-     * ->surplus[O_GOLD]) according to the setting.
-     */
-    pplayer->economic.gold += pcity->surplus[O_GOLD];
+  /* Update the treasury, paying upkeeps and checking running out
+   * of gold based on the ruleset setting 'game.info.gold_upkeep_style':
+   * GOLD_UPKEEP_CITY: Cities pay for buildings and units and deficit
+   *                   is checked right here.
+   * GOLD_UPKEEP_MIXED: Cities pay only for buildings; the nation pays
+   *                    for units after all cities are processed.
+   * GOLD_UPKEEP_NATION: The nation pays for buildings and units 
+   *                     only after all cities are processed.
+   *
+   * city_support() in city.c sets pcity->usage[O_GOLD] (and hence
+   * ->surplus[O_GOLD]) according to the setting.
+   */
+  pplayer->economic.gold += pcity->surplus[O_GOLD];
 
-    if (pplayer->economic.gold < 0) {
-      if (game.info.gold_upkeep_style == GOLD_UPKEEP_NATION) {
-        ; /* This shouldn't be possible since all upkeeps are paid later. */
-      } else if (game.info.gold_upkeep_style == GOLD_UPKEEP_MIXED) {
-        /* Ran out of money while paying for buildings, try to sell buildings. */
-        city_balance_treasury_buildings(pcity);
-      } else if (game.info.gold_upkeep_style == GOLD_UPKEEP_CITY) {
-        /* Paid for both buildings and units, try to sell both in turn. */
-        if (! city_balance_treasury_buildings(pcity)) {
-          city_balance_treasury_units(pcity);
-        }
+  if (pplayer->economic.gold < 0) {
+    if (game.info.gold_upkeep_style == GOLD_UPKEEP_NATION) {
+      ; /* This shouldn't be possible since all upkeeps are paid later. */
+    } else if (game.info.gold_upkeep_style == GOLD_UPKEEP_MIXED) {
+      /* Ran out of money while paying for buildings, try to sell buildings. */
+      city_balance_treasury_buildings(pcity);
+    } else if (game.info.gold_upkeep_style == GOLD_UPKEEP_CITY) {
+      /* Paid for both buildings and units, try to sell both in turn. */
+      if (! city_balance_treasury_buildings(pcity)) {
+        city_balance_treasury_units(pcity);
       }
     }
+  }
 
-    /* ------------------------------------------------------------------------
-     * Produce pollution! 
-     * Before building, so that a disbanding city can still pollute... */
-       
-    check_pollution(pcity);
+  /* ------------------------------------------------------------------------
+   * Produce pollution! 
+   * Before building, so that a disbanding city can still pollute... */
+     
+  check_pollution(pcity);
 
 
-    /* ------------------------------------------------------------------------   
-     * Handle shield upkeep and building. All of that is inside city_build_stuff().
-     * The city might be destroyed here, if the city is disbanded into Settlers,
-     * or if there's an undisbandable unit with shield upkeep that can't be paid, 
-     * so potentially return early. This happens after trade and gold output has
-     * committed, though. */
+  /* ------------------------------------------------------------------------   
+   * Handle shield upkeep and building. All of that is inside city_build_stuff().
+   * The city might be destroyed here, if the city is disbanded into Settlers,
+   * or if there's an undisbandable unit with shield upkeep that can't be paid, 
+   * so potentially return early. This happens after trade and gold output has
+   * committed, though. */
 
-    if (! city_build_stuff(pplayer, pcity)) {
-      /* City disbanded into a unit, or was destroyed for lack of upkeep */
-      return;
-    }
+  if (! city_build_stuff(pplayer, pcity)) {
+    /* City disbanded into a unit, or was destroyed for lack of upkeep */
+    return;
+  }
 
-   
-    /* ------------------------------------------------------------------------
-     * Handle plague. Do it before food growth. */
+ 
+  /* ------------------------------------------------------------------------
+   * Handle plague. Do it before food growth. */
 
-    if (game.info.illness_on) {
-      /* recalculate city illness; illness due to trade has to be saved
-       * within the city struct as the client has not all data to
-       * calculate it */
+  if (game.info.illness_on) {
+    /* recalculate city illness; illness due to trade has to be saved
+     * within the city struct as the client has not all data to
+     * calculate it */
+    pcity->server.illness
+      = city_illness_calc(pcity, NULL, NULL, &(pcity->illness_trade), NULL);
+
+    if (city_illness_check(pcity)) {
+      notify_player(pplayer, city_tile(pcity), E_CITY_PLAGUE, ftc_server,
+                    _("%s has been struck by a plague! Population lost!"), 
+                    city_link(pcity));
+      city_reduce_size(pcity, 1, NULL, "plague");
+      pcity->turn_plague = game.info.turn;
+
+      /* recalculate illness */
       pcity->server.illness
-        = city_illness_calc(pcity, NULL, NULL, &(pcity->illness_trade), NULL);
-
-      if (city_illness_check(pcity)) {
-        notify_player(pplayer, city_tile(pcity), E_CITY_PLAGUE, ftc_server,
-                      _("%s has been struck by a plague! Population lost!"), 
-                      city_link(pcity));
-        city_reduce_size(pcity, 1, NULL, "plague");
-        pcity->turn_plague = game.info.turn;
-
-        /* recalculate illness */
-        pcity->server.illness
-          = city_illness_calc(pcity, NULL, NULL, &(pcity->illness_trade),
-                              NULL);
-      }
+        = city_illness_calc(pcity, NULL, NULL, &(pcity->illness_trade),
+                            NULL);
     }
-    
-    
-    /* ------------------------------------------------------------------------
-     * Check population growth. 
-     *
-     * This also depends on rapture being set correctly above */
-    
-    saved_id = pcity->id;
-    city_populate(pcity, pplayer);
-    if (NULL == player_city_by_number(pplayer, saved_id)) {
-      /* If the city is destroyed by famine */
-      return;
-    }
+  }
+  
+  
+  /* ------------------------------------------------------------------------
+   * Check population growth. 
+   *
+   * This also depends on rapture being set correctly above */
+  
+  saved_id = pcity->id;
+  city_populate(pcity, pplayer);
+  if (NULL == player_city_by_number(pplayer, saved_id)) {
+    /* If the city is destroyed by famine */
+    return;
+  }
 
 
-    /* ------------------------------------------------------------------------
-     * Check if disorder in city brings the government to anarchy */
+  /* ------------------------------------------------------------------------
+   * Check if disorder in city brings the government to anarchy */
 
-    revolution_turns = get_city_bonus(pcity, EFT_REVOLUTION_UNHAPPINESS);
-    if (city_unhappy(pcity)) {
-      const char *revomsg;
+  revolution_turns = get_city_bonus(pcity, EFT_REVOLUTION_UNHAPPINESS);
+  if (city_unhappy(pcity)) {
+    const char *revomsg;
 
-      pcity->anarchy++;
-      if (pcity->anarchy == revolution_turns) {
-        /* Revolution next turn if not dealt with */
-        /* TRANS: preserve leading space; this string will be appended to
-         * another sentence */
-        revomsg = _(" Unrest threatens to spread beyond the city.");
-      } else {
-        revomsg = "";
-      }
-      if (pcity->anarchy == 1) {
-        notify_player(pplayer, city_tile(pcity), E_CITY_DISORDER, ftc_server,
-                      /* TRANS: second %s is an optional extra sentence */
-                      _("Civil disorder in %s.%s"),
-                      city_link(pcity), revomsg);
-      } else {
-        notify_player(pplayer, city_tile(pcity), E_CITY_DISORDER, ftc_server,
-                      /* TRANS: second %s is an optional extra sentence */
-                      _("CIVIL DISORDER CONTINUES in %s.%s"),
-                      city_link(pcity), revomsg);
-      }
+    pcity->anarchy++;
+    if (pcity->anarchy == revolution_turns) {
+      /* Revolution next turn if not dealt with */
+      /* TRANS: preserve leading space; this string will be appended to
+       * another sentence */
+      revomsg = _(" Unrest threatens to spread beyond the city.");
     } else {
-      if (pcity->anarchy != 0) {
-        notify_player(pplayer, city_tile(pcity), E_CITY_NORMAL, ftc_server,
-                      _("Order restored in %s."),
-                      city_link(pcity));
-      }
-      pcity->anarchy = 0;
+      revomsg = "";
     }
-    
-    if (revolution_turns > 0 && pcity->anarchy > revolution_turns) {
-      notify_player(pplayer, city_tile(pcity), E_ANARCHY, ftc_server,
-                    /* TRANS: %s - government form, e.g., Democracy */
-                    _("The people have overthrown your %s, "
-                      "your country is in turmoil."),
-                    government_name_translation(gov));
-      handle_player_change_government(pplayer, government_number(gov));
+    if (pcity->anarchy == 1) {
+      notify_player(pplayer, city_tile(pcity), E_CITY_DISORDER, ftc_server,
+                    /* TRANS: second %s is an optional extra sentence */
+                    _("Civil disorder in %s.%s"),
+                    city_link(pcity), revomsg);
+    } else {
+      notify_player(pplayer, city_tile(pcity), E_CITY_DISORDER, ftc_server,
+                    /* TRANS: second %s is an optional extra sentence */
+                    _("CIVIL DISORDER CONTINUES in %s.%s"),
+                    city_link(pcity), revomsg);
     }
-    
-    /* ------------------------------------------------------------------------
-     * Some final stuff */
-
-    pcity->did_sell = FALSE;
-    pcity->did_buy = FALSE;
-    pcity->airlift = city_airlift_max(pcity);
-
-
-    send_city_info(NULL, pcity);
-
-
-    if (city_refresh(pcity)) {
-      auto_arrange_workers(pcity);
+  } else {
+    if (pcity->anarchy != 0) {
+      notify_player(pplayer, city_tile(pcity), E_CITY_NORMAL, ftc_server,
+                    _("Order restored in %s."),
+                    city_link(pcity));
     }
-    sanity_check_city(pcity);
+    pcity->anarchy = 0;
+  }
+  
+  if (revolution_turns > 0 && pcity->anarchy > revolution_turns) {
+    notify_player(pplayer, city_tile(pcity), E_ANARCHY, ftc_server,
+                  /* TRANS: %s - government form, e.g., Democracy */
+                  _("The people have overthrown your %s, "
+                    "your country is in turmoil."),
+                  government_name_translation(gov));
+    handle_player_change_government(pplayer, government_number(gov));
+  }
+  
+  /* ------------------------------------------------------------------------
+   * Some final stuff */
+
+  pcity->did_sell = FALSE;
+  pcity->did_buy = FALSE;
+  pcity->airlift = city_airlift_max(pcity);
+
+
+  send_city_info(NULL, pcity);
+
+
+  if (city_refresh(pcity)) {
+    auto_arrange_workers(pcity);
+  }
+  sanity_check_city(pcity);
 }
 
 /*****************************************************************************
