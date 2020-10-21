@@ -2970,8 +2970,8 @@ static void update_city_activity(struct city *pcity)
 {
   struct player *pplayer;
   struct government *gov;
-  bool is_happy;
-  bool is_celebrating;
+  int saved_id;
+  int revolution_turns;
 
   if (!pcity) {
     return;
@@ -2979,31 +2979,28 @@ static void update_city_activity(struct city *pcity)
 
   pplayer = city_owner(pcity);
   gov = government_of_city(pcity);
-  is_happy = city_happy(pcity);
-  is_celebrating = city_celebrating(pcity);
+
 
   if (city_refresh(pcity)) {
     auto_arrange_workers(pcity);
   }
 
-  /* Reporting of celebrations rewritten, copying the treatment of disorder below,
-     with the added rapture rounds count.  991219 -- Jing */
-  if (city_build_stuff(pplayer, pcity)) {
-    int saved_id;
-    int revolution_turns;
 
+    /* ------------------------------------------------------------------------
+     * Calculate history first, before builds and other things change it */
     pcity->history += city_history_gain(pcity);
 
     /* History can decrease, but never go below zero */
     pcity->history = MAX(pcity->history, 0);
 
-    /* Keep old behaviour when building new improvement could keep
-       city celebrating */
-    if (is_happy == FALSE) {
-      is_happy = city_happy(pcity);
-    }
 
-    if (city_celebrating(pcity) || is_celebrating) {
+    /* ------------------------------------------------------------------------
+     * Celebration. Surpluses should already have been calculated taking this into
+     * account, but it makes sense to print the message first.
+     *
+     * Happens before building. */
+    
+    if (city_celebrating(pcity)) {
       pcity->rapture++;
       if (pcity->rapture == 1) {
         notify_player(pplayer, city_tile(pcity), E_CITY_LOVE, ftc_server,
@@ -3018,40 +3015,13 @@ static void update_city_activity(struct city *pcity)
       }
       pcity->rapture = 0;
     }
-    pcity->was_happy = is_happy;
+    pcity->was_happy = city_happy(pcity);
 
-    /* Handle the illness. */
-    if (game.info.illness_on) {
-      /* recalculate city illness; illness due to trade has to be saved
-       * within the city struct as the client has not all data to
-       * calculate it */
-      pcity->server.illness
-        = city_illness_calc(pcity, NULL, NULL, &(pcity->illness_trade), NULL);
+    /* ------------------------------------------------------------------------
+     * Add Gold and Science output. Happens before building.
+     *
+     * New techs are _not_ invented here yet, so this shouldn't change any production values */
 
-      if (city_illness_check(pcity)) {
-        notify_player(pplayer, city_tile(pcity), E_CITY_PLAGUE, ftc_server,
-                      _("%s has been struck by a plague! Population lost!"), 
-                      city_link(pcity));
-        city_reduce_size(pcity, 1, NULL, "plague");
-        pcity->turn_plague = game.info.turn;
-
-        /* recalculate illness */
-        pcity->server.illness
-          = city_illness_calc(pcity, NULL, NULL, &(pcity->illness_trade),
-                              NULL);
-      }
-    }
-
-    /* City population updated here, after the rapture stuff above. --Jing */
-    saved_id = pcity->id;
-    city_populate(pcity, pplayer);
-    if (NULL == player_city_by_number(pplayer, saved_id)) {
-      return;
-    }
-
-    pcity->did_sell = FALSE;
-    pcity->did_buy = FALSE;
-    pcity->airlift = city_airlift_max(pcity);
     update_bulbs(pplayer, pcity->prod[O_SCIENCE], FALSE);
 
     /* Update the treasury, paying upkeeps and checking running out
@@ -3081,6 +3051,67 @@ static void update_city_activity(struct city *pcity)
         }
       }
     }
+
+    /* ------------------------------------------------------------------------
+     * Produce pollution! 
+     * Before building, so that a disbanding city can still pollute... */
+       
+    check_pollution(pcity);
+
+
+    /* ------------------------------------------------------------------------   
+     * Handle shield upkeep and building. All of that is inside city_build_stuff().
+     * The city might be destroyed here, if the city is disbanded into Settlers,
+     * or if there's an undisbandable unit with shield upkeep that can't be paid, 
+     * so potentially return early. This happens after trade and gold output has
+     * committed, though. */
+
+    if (! city_build_stuff(pplayer, pcity)) {
+      /* City disbanded into a unit, or was destroyed for lack of upkeep */
+      return;
+    }
+
+   
+    /* ------------------------------------------------------------------------
+     * Handle plague. Do it before food growth. */
+
+    if (game.info.illness_on) {
+      /* recalculate city illness; illness due to trade has to be saved
+       * within the city struct as the client has not all data to
+       * calculate it */
+      pcity->server.illness
+        = city_illness_calc(pcity, NULL, NULL, &(pcity->illness_trade), NULL);
+
+      if (city_illness_check(pcity)) {
+        notify_player(pplayer, city_tile(pcity), E_CITY_PLAGUE, ftc_server,
+                      _("%s has been struck by a plague! Population lost!"), 
+                      city_link(pcity));
+        city_reduce_size(pcity, 1, NULL, "plague");
+        pcity->turn_plague = game.info.turn;
+
+        /* recalculate illness */
+        pcity->server.illness
+          = city_illness_calc(pcity, NULL, NULL, &(pcity->illness_trade),
+                              NULL);
+      }
+    }
+    
+    
+    /* ------------------------------------------------------------------------
+     * Check population growth. 
+     *
+     * This also depends on rapture being set correctly above */
+    
+    saved_id = pcity->id;
+    city_populate(pcity, pplayer);
+    if (NULL == player_city_by_number(pplayer, saved_id)) {
+      /* If the city is destroyed by famine */
+      return;
+    }
+
+
+    /* ------------------------------------------------------------------------
+     * Check if disorder in city brings the government to anarchy */
 
     revolution_turns = get_city_bonus(pcity, EFT_REVOLUTION_UNHAPPINESS);
     if (city_unhappy(pcity)) {
@@ -3114,10 +3145,7 @@ static void update_city_activity(struct city *pcity)
       }
       pcity->anarchy = 0;
     }
-    check_pollution(pcity);
-
-    send_city_info(NULL, pcity);
-
+    
     if (revolution_turns > 0 && pcity->anarchy > revolution_turns) {
       notify_player(pplayer, city_tile(pcity), E_ANARCHY, ftc_server,
                     /* TRANS: %s - government form, e.g., Democracy */
@@ -3126,11 +3154,22 @@ static void update_city_activity(struct city *pcity)
                     government_name_translation(gov));
       handle_player_change_government(pplayer, government_number(gov));
     }
+    
+    /* ------------------------------------------------------------------------
+     * Some final stuff */
+
+    pcity->did_sell = FALSE;
+    pcity->did_buy = FALSE;
+    pcity->airlift = city_airlift_max(pcity);
+
+
+    send_city_info(NULL, pcity);
+
+
     if (city_refresh(pcity)) {
       auto_arrange_workers(pcity);
     }
     sanity_check_city(pcity);
-  }
 }
 
 /*****************************************************************************
