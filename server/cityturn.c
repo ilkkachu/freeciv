@@ -90,6 +90,8 @@ static bool worklist_change_build_target(struct player *pplayer,
 
 static bool city_distribute_surplus_shields(struct player *pplayer,
 					    struct city *pcity);
+static void wonder_set_build_turn(struct player *pplayer,
+                                  struct impr_type *pimprove);
 static bool city_build_building(struct player *pplayer, struct city *pcity);
 static bool city_build_unit(struct player *pplayer, struct city *pcity);
 static bool city_build_stuff(struct player *pplayer, struct city *pcity);
@@ -2175,6 +2177,22 @@ static bool city_distribute_surplus_shields(struct player *pplayer,
 }
 
 /**************************************************************************
+  Record the build turn of a wonder. Used in city processing to figure
+  out which wonders are built on the same turn and not yet effective.
+**************************************************************************/
+static void wonder_set_build_turn(struct player *pplayer, 
+                                  struct impr_type *pimprove)
+{
+  int windex = improvement_number(pimprove);
+  
+  if (! is_wonder(pimprove)) {
+    return;
+  }
+
+  pplayer->wonder_build_turn[windex] = game.info.turn;
+}
+
+/**************************************************************************
   Returns FALSE when the city is removed, TRUE otherwise.
 **************************************************************************/
 static bool city_build_building(struct player *pplayer, struct city *pcity)
@@ -2230,6 +2248,8 @@ static bool city_build_building(struct player *pplayer, struct city *pcity)
     } else {
       space_part = FALSE;
       city_add_improvement(pcity, pimprove);
+      /* New city turn: wonders only take effect next turn */
+      wonder_set_build_turn(pplayer, pimprove);
     }
     pcity->before_change_shields -= impr_build_shield_cost(pimprove);
     pcity->shield_stock -= impr_build_shield_cost(pimprove);
