@@ -853,6 +853,7 @@ static bool city_increase_size(struct city *pcity, struct player *nationality)
   struct player *powner = city_owner(pcity);
   struct impr_type *pimprove = pcity->production.value.building;
   int saved_id = pcity->id;
+  int granary_size = city_granary_size(city_size_get(pcity));
 
   if (!city_can_grow_to(pcity, city_size_get(pcity) + 1)) {
     /* need improvement */
@@ -884,7 +885,11 @@ static bool city_increase_size(struct city *pcity, struct player *nationality)
   } else {
     new_food = city_granary_size(city_size_get(pcity)) * savings_pct / 100;
   }
+  log_normal("city_increase_size: food_stock was %d, granary size is %d, difference/loss %d",
+             pcity->food_stock, granary_size, pcity->food_stock - granary_size);
+
   pcity->food_stock = MIN(pcity->food_stock, new_food);
+  log_normal("city_increase_size: set food_stock to %d", pcity->food_stock);
 
   /* If there is enough food, and the city is big enough,
    * make new citizens into scientists or taxmen -- Massimo */
@@ -997,6 +1002,7 @@ static void city_populate(struct city *pcity, struct player *nationality)
    */
   pcity->food_stock += pcity->saved_surplus[O_FOOD];
   
+  
   if (pcity->food_stock >= granary_size || city_rapture_grow(pcity)) {
     if (city_had_recent_plague(pcity)) {
       notify_player(city_owner(pcity), city_tile(pcity),
@@ -1007,6 +1013,11 @@ static void city_populate(struct city *pcity, struct player *nationality)
       pcity->food_stock = MIN(pcity->food_stock, granary_size);
     } else {
       bool success;
+      int excess_food = pcity->food_stock - granary_size;
+
+      /* take note of overflow food here, not in city_increase_size */
+      log_normal("city_populate: populating with %d excess food",
+                 excess_food);
 
       success = city_increase_size(pcity, nationality);
       map_claim_border(pcity->tile, pcity->owner, -1);
