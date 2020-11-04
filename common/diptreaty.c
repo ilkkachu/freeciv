@@ -83,7 +83,7 @@ bool could_intel_with_player(const struct player *pplayer,
     return FALSE;
   if (player_has_embassy(pplayer, aplayer))
     return TRUE;
-  if (!game.server.contact_intel)
+  if (is_server() && !game.server.contact_intel)
     return FALSE;
   if (player_diplstate_get(pplayer, aplayer)->contact_turns_left > 0
       || player_diplstate_get(aplayer, pplayer)->contact_turns_left > 0)
