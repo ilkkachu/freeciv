@@ -413,6 +413,7 @@ void diplomat_bribe(struct player *pplayer, struct unit *pdiplomat,
   int diplomat_id = pdiplomat->id;
   struct city *pcity;
   bool bounce;
+  int new_homecity_id;
 
   /* Fetch target unit's player.  Sanity checks. */
   fc_assert_ret(pvictim);
@@ -472,7 +473,27 @@ void diplomat_bribe(struct player *pplayer, struct unit *pdiplomat,
   log_debug("bribe-unit: succeeded");
 
   victim_tile = unit_tile(pvictim);
-  pvictim = unit_change_owner(pvictim, pplayer, pdiplomat->homecity,
+  new_homecity_id = pdiplomat->homecity;
+  if (game.server.homecaughtunits_always && !new_homecity_id) {
+    /* Homeless unit capturing, find some city to home the victims */
+    /* Don't care if we give an inland city to a sea unit, that
+     * can happen also when using the bribing unit's home city */
+    struct city *pcity = find_closest_city(victim_tile, NULL, pplayer,
+                                           FALSE, FALSE, FALSE,
+                                           TRUE, FALSE, NULL);
+    if (!pcity) {
+      /* If the player has no cities, we have to give a free pass */
+      log_debug("bribe-unit: no city to home victim to!");
+      new_homecity_id = IDENTITY_NUMBER_ZERO;
+    } else {
+      new_homecity_id = pcity->id;
+      notify_player(pplayer, victim_tile, E_MY_DIPLOMAT_BRIBE, ftc_server,
+                    _("Homing bribed unit in %s."),
+                    city_name_get(pcity));
+    } 
+  }
+  
+  pvictim = unit_change_owner(pvictim, pplayer, new_homecity_id,
                               ULR_BRIBED);
 
   /* N.B.: unit_link always returns the same pointer. As unit_change_owner()

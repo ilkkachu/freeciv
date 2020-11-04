@@ -259,6 +259,7 @@ static void do_capture_units(struct player *pplayer,
   char capturer_link[MAX_LEN_LINK];
   const char *capturer_nation = nation_plural_for_player(pplayer);
   bv_unit_types unique_on_tile;
+  int new_homecity_id;
 
   /* Sanity check: make sure that the capture won't result in the actor
    * ending up with more than one unit of each unique unit type. */
@@ -303,15 +304,39 @@ static void do_capture_units(struct player *pplayer,
   /* N.B: unit_link() always returns the same pointer. */
   sz_strlcpy(capturer_link, unit_link(punit));
 
+  /* New home city for all captured units */
+  if (game.server.homecaughtunits) {
+    new_homecity_id = punit->homecity; /* might be zero */
+  } else {
+    new_homecity_id = IDENTITY_NUMBER_ZERO;
+  }
+  
+  /* If homecaughtunits_always is set, it overrides homecaughtunits */
+  if (game.server.homecaughtunits_always && !new_homecity_id) {
+    /* Don't care if we give an inland city to a sea unit, that
+     * can happen also when using the capturing unit's home city */
+    struct city *pcity = find_closest_city(pdesttile, NULL, pplayer,
+                                           FALSE, FALSE, FALSE, 
+                                           TRUE, FALSE, NULL);
+    if (!pcity) {
+      /* If the player has no cities, we have to give a free pass */
+      log_debug("capture units: no city to home victims to!");
+      new_homecity_id = IDENTITY_NUMBER_ZERO;
+    } else {
+      new_homecity_id = pcity->id;
+      notify_player(pplayer, pdesttile, E_MY_DIPLOMAT_BRIBE, ftc_server,
+                    _("Homing captured units in %s."),
+                    city_name_get(pcity));
+    }
+  } 
+
   unit_list_iterate(pdesttile->units, to_capture) {
     struct player *uplayer = unit_owner(to_capture);
     const char *victim_link;
 
     unit_owner(to_capture)->score.units_lost++;
     to_capture = unit_change_owner(to_capture, pplayer,
-                                   (game.server.homecaughtunits
-                                    ? punit->homecity
-                                    : IDENTITY_NUMBER_ZERO),
+                                   new_homecity_id,
                                    ULR_CAPTURED);
     /* As unit_change_owner() currently remove the old unit and
      * replace by a new one (with a new id), we want to make link to

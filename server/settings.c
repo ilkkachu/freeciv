@@ -2426,6 +2426,16 @@ static struct setting settings[] = {
               "subject to the 'killunhomed' option."),
            NULL, NULL, GAME_DEFAULT_HOMECAUGHTUNITS)
 
+  GEN_BOOL("homecaughtunits_always", game.server.homecaughtunits_always,
+           SSET_RULES_FLEXIBLE, SSET_MILITARY, SSET_RARE, SSET_TO_CLIENT,
+           N_("Units caught by homeless actors also get a home city"),
+           /* TRANS: The string between single quotes is a setting name and
+            * should not be translated. */
+           N_("If set, units captured or bribed by a homeless unit will "
+              "always be homed to the nearest city. For captures, this "
+              "overrides the value of 'homecaughtunits'. "),
+           NULL, NULL, GAME_DEFAULT_HOMECAUGHTUNITS_ALWAYS)
+
   GEN_BOOL("naturalcitynames", game.server.natural_city_names,
            SSET_RULES_FLEXIBLE, SSET_SOCIOLOGY, SSET_RARE, SSET_TO_CLIENT,
            N_("Whether to use natural city names"),

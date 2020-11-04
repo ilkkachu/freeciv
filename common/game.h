@@ -186,6 +186,7 @@ struct civ_game {
                              write sizeof(unsigned) bytes */
       bool savepalace;
       bool homecaughtunits;
+      bool homecaughtunits_always;
       char start_units[MAX_LEN_STARTUNIT];
       bool start_city;
       int start_year;
@@ -485,6 +486,7 @@ extern struct civ_game game;
 #define GAME_DEFAULT_SAVEPALACE      TRUE
 
 #define GAME_DEFAULT_HOMECAUGHTUNITS TRUE
+#define GAME_DEFAULT_HOMECAUGHTUNITS_ALWAYS FALSE
 
 #define GAME_DEFAULT_NATURALCITYNAMES TRUE
 
