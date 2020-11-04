@@ -2059,6 +2059,27 @@ void make_contact(struct player *pplayer1, struct player *pplayer2,
                   _("You have made contact with the %s, ruled by %s."),
                   nation_plural_for_player(pplayer1),
                   player_name(pplayer1));
+    if (new_state == DS_ARMISTICE) {
+      /* Non-default relation after contact, so send a message
+       * Could just modify to send message in any case. */
+      /* TRANS: ... the Poles ... Polish territory */
+      char *msg = PL_("You are in armistice with the %s. In %d turn, "
+                      "it will become a peace treaty. Move your "
+                      "military units out of %s territory to avoid them "
+                      "being disbanded.",
+                      "You are in armistice with the %s. In %d turns, "
+                      "it will become a peace treaty. Move any "
+                      "military units out of %s territory to avoid them "
+                      "being disbanded.",
+                      TURNS_LEFT);
+
+      notify_player(pplayer1, NULL, E_TREATY_PEACE, ftc_server,
+                    msg, nation_plural_for_player(pplayer2), 
+                    TURNS_LEFT, nation_adjective_for_player(pplayer2));
+      notify_player(pplayer2, NULL, E_TREATY_PEACE, ftc_server,
+                    msg, nation_plural_for_player(pplayer1), 
+                    TURNS_LEFT, nation_adjective_for_player(pplayer1));
+    }
     send_player_all_c(pplayer1, pplayer2->connections);
     send_player_all_c(pplayer2, pplayer1->connections);
     send_player_all_c(pplayer1, pplayer1->connections);
