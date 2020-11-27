@@ -210,6 +210,9 @@ static void close_connection(struct connection *pconn)
     timer_list_destroy(pconn->server.ping_timers);
     pconn->server.ping_timers = NULL;
   }
+  
+  timer_destroy(pconn->server.idle_timer);
+  pconn->server.idle_timer = NULL;
 
   conn_pattern_list_destroy(pconn->server.ignore_list);
   pconn->server.ignore_list = NULL;
@@ -616,6 +619,14 @@ enum server_events server_sniff_all_input(void)
       send_ping_times_to_all();
 
       conn_list_iterate(game.all_connections, pconn) {
+        /* drop idle connections */
+        if (game.server.idle_timeout
+            && timer_read_seconds(pconn->server.idle_timer) > game.server.idle_timeout) {
+          log_verbose("connection (%s) cut due to idle timeout",
+                      conn_description(pconn));
+          connection_close_server(pconn, _("idle timeout"));
+          continue;
+        }
         if ((!pconn->server.is_closing
              && 0 < timer_list_size(pconn->server.ping_timers)
 	     && timer_read_seconds(timer_list_front
@@ -1051,6 +1062,8 @@ int server_make_connection(int new_sock, const char *client_addr, const char *cl
       pconn->server.auth_tries = 0;
       pconn->server.auth_settime = 0;
       pconn->server.status = AS_NOT_ESTABLISHED;
+      pconn->server.idle_timer = timer_renew(pconn->server.idle_timer, TIMER_USER, TIMER_ACTIVE);
+      timer_start(pconn->server.idle_timer);
       pconn->server.ping_timers = timer_list_new_full(timer_destroy);
       pconn->server.granted_access_level = pconn->access_level;
       pconn->server.ignore_list =

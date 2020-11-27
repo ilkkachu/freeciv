@@ -523,6 +523,13 @@ void *get_packet_from_connection(struct connection *pc,
     return NULL;
   }
 
+  if (is_server()
+      && utype.type != PACKET_CONN_PONG
+      && utype.type != PACKET_CLIENT_HEARTBEAT) {
+    timer_clear(pc->server.idle_timer);
+    timer_start(pc->server.idle_timer);
+  }
+
   log_packet("got packet type=(%s)%d len=%d from %s",
              packet_name(utype.type), utype.itype, whole_packet_len,
              is_server() ? pc->username : "server");

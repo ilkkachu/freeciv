@@ -148,6 +148,7 @@ struct civ_game {
       int incite_total_factor;
       int incite_unit_factor;
       int init_vis_radius_sq;
+      int idle_timeout;
       int kick_time;
       int killunhomed;    /* slowly killing unhomed units */
       int maxconnectionsperhost;
@@ -733,6 +734,10 @@ extern struct civ_game game;
 #define GAME_DEFAULT_PERSISTENTREADY PERSISTENTR_DISABLED
 
 #define GAME_MAX_READ_RECURSION 10 /* max recursion for the read command */
+
+#define GAME_DEFAULT_IDLE_TIMEOUT 0     /* 0 = disabled */
+#define GAME_MIN_IDLE_TIMEOUT 0         /* 0 = disabled */
+#define GAME_MAX_IDLE_TIMEOUT 86400     /* 86400 seconds = 24 hours */
 
 #define GAME_DEFAULT_KICK_TIME 1800     /* 1800 seconds = 30 minutes. */
 #define GAME_MIN_KICK_TIME 0            /* 0 = disabling. */

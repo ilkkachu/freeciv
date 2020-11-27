@@ -3018,6 +3018,18 @@ static struct setting settings[] = {
              "\"kick\" command may reconnect. Changing this setting will "
              "affect users kicked in the past."), NULL, NULL, NULL,
           GAME_MIN_KICK_TIME, GAME_MAX_KICK_TIME, GAME_DEFAULT_KICK_TIME)
+
+  GEN_INT("idletimeout", game.server.idle_timeout,
+          SSET_RULES_FLEXIBLE, SSET_NETWORK, SSET_RARE, SSET_SERVER_ONLY,
+          N_("Time after which to drop idle connections"),
+          /* TRANS: the string in double quotes is a server command name and
+           * should not be translated */
+          N_("Time in seconds before idle client connections are dropped. "
+             "A connection is considered idle if it sends no packets other "
+             "than ping replies or heartbeats. Set to zero to disable."), 
+          NULL, NULL, NULL,
+          GAME_MIN_IDLE_TIMEOUT, GAME_MAX_IDLE_TIMEOUT, GAME_DEFAULT_IDLE_TIMEOUT)
+
 };
 
 #undef GEN_BOOL

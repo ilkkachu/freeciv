@@ -395,6 +395,7 @@ static void game_defaults(void)
     game.server.global_warming_percent = GAME_DEFAULT_GLOBAL_WARMING_PERCENT;
     game.server.homecaughtunits   = GAME_DEFAULT_HOMECAUGHTUNITS;
     game.server.homecaughtunits_always   = GAME_DEFAULT_HOMECAUGHTUNITS_ALWAYS;
+    game.server.idle_timeout      = GAME_DEFAULT_IDLE_TIMEOUT;
     game.server.kick_time         = GAME_DEFAULT_KICK_TIME;
     game.server.killunhomed       = GAME_DEFAULT_KILLUNHOMED;
     game.server.maxconnectionsperhost = GAME_DEFAULT_MAXCONNECTIONSPERHOST;

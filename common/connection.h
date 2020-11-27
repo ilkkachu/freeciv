@@ -206,6 +206,9 @@ struct connection {
        * weren't PACKET_CONN_PONGed yet? */
       struct timer_list *ping_timers;
 
+      /* Time since receiving a non-ping, non-heartbeat packet */
+      struct timer *idle_timer;
+
       /* Holds number of tries for authentication from client. */
       int auth_tries;
 
