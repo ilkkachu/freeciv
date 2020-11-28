@@ -572,6 +572,9 @@ static bool connection_attach_real(struct connection *pconn,
                         "connections must be detached with "
                         "connection_detach() before calling this!");
 
+  log_normal("connection_attach_real: called pconn: %s pplayer: %s observing: %d connecting: %d",
+            pconn->username, pplayer ? pplayer->name : "N/A", observing, connecting);
+
   if (!observing) {
     if (NULL == pplayer) {
       /* search for uncontrolled player */
@@ -654,6 +657,14 @@ static bool connection_attach_real(struct connection *pconn,
   pconn->observer = observing;
   pconn->playing = pplayer;
   if (pplayer) {
+    if (conn_list_size(pplayer->connections) == 0) {
+      /* first attachment to this player */
+      time_t now = time(NULL);
+      log_normal("connection_attach_real: first connection to player %s at time: %ld, starting timer",
+                 pplayer->name, now);
+
+      timer_start(pplayer->server.online_timer);
+    }
     conn_list_append(pplayer->connections, pconn);
   }
 
@@ -731,13 +742,25 @@ void connection_detach(struct connection *pconn, bool remove_unused_player)
 {
   struct player *pplayer;
 
+  log_normal("connection_detach: called: pconn: %s remove_unused_player: %d",
+             pconn->username, remove_unused_player);
+
   fc_assert_ret(pconn != NULL);
 
   if (NULL != (pplayer = pconn->playing)) {
     bool was_connected = pplayer->is_connected;
+    log_normal("connection_detach: pplayer: %s", pplayer->name);
 
     send_remove_team_votes(pconn);
     conn_list_remove(pplayer->connections, pconn);
+    if (conn_list_size(pplayer->connections) == 0) {
+      int online_time;
+      timer_stop(pplayer->server.online_timer);
+      online_time = timer_read_seconds(pplayer->server.online_timer);
+      time_t now = time(NULL);
+      log_normal("connection_detach: last attached connection. time now %ld, total time online this turn: %d",
+                 now, online_time);
+    }
     pconn->playing = NULL;
     pconn->observer = FALSE;
     restore_access_level(pconn);

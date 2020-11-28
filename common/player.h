@@ -325,6 +325,8 @@ struct player {
       
       time_t action_timestamp;
       int action_turn;
+      
+      struct timer *online_timer; /* measure time the player is online */
     } server;
 
     struct {

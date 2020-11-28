@@ -627,6 +627,22 @@ enum server_events server_sniff_all_input(void)
           connection_close_server(pconn, _("idle timeout"));
           continue;
         }
+
+        /* monitor time spent online by players */
+        if (pconn->playing) {
+          struct player *pplayer = pconn->playing;
+          int online_time = timer_read_seconds(pplayer->server.online_timer);
+          int online_time_max = 999999;   /* XXX: placeholder */
+          log_normal("ping: player %s has been online for %d seconds this turn",
+                     player_name(pplayer), online_time);
+          if (online_time > online_time_max) {
+            log_verbose("connection (%s) cut due to online time restrictions",
+                        conn_description(pconn));
+            connection_close_server(pconn, _("too long online this turn"));
+            continue;
+          }
+        }
+
         if ((!pconn->server.is_closing
              && 0 < timer_list_size(pconn->server.ping_timers)
 	     && timer_read_seconds(timer_list_front

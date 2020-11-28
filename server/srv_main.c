@@ -1210,6 +1210,12 @@ static void begin_phase(bool is_new_phase)
     if (!pplayer->ai_controlled) {
       building_advisor(pplayer);
     }
+    log_normal("player %s was online for %d seconds last turn",
+               player_name(pplayer), (int) timer_read_seconds(pplayer->server.online_timer));
+    timer_clear(pplayer->server.online_timer); /* reset timer */
+    if (conn_list_size(pplayer->connections) > 0) {
+      timer_start(pplayer->server.online_timer);
+    }
   } phase_players_iterate_end;
 
   phase_players_iterate(pplayer) {

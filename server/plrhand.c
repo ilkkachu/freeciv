@@ -1359,6 +1359,9 @@ void server_player_init(struct player *pplayer, bool initmap,
   pplayer->server.action_timestamp = 0;
   pplayer->server.action_turn = -2; /* before any actual turn */
 
+  pplayer->server.online_timer 
+   = timer_renew(pplayer->server.online_timer, TIMER_USER, TIMER_ACTIVE);
+
   pplayer->server.got_first_city = FALSE;
   BV_CLR_ALL(pplayer->server.really_gives_vision);
   BV_CLR_ALL(pplayer->server.debug);
@@ -1745,6 +1748,9 @@ void server_remove_player(struct player *pplayer)
 
   /* Destroy advisor and ai data. */
   CALL_FUNC_EACH_AI(player_free, pplayer);
+
+  timer_destroy(pplayer->server.online_timer);
+  pplayer->server.online_timer = NULL;
 
   handicaps_close(pplayer);
   ai_traits_close(pplayer);
