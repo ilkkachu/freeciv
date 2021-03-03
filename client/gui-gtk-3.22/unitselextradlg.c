@@ -86,11 +86,43 @@ static void unit_sel_extra_toggled(GtkToggleButton *tb, gpointer userdata)
   struct unit_sel_extra_cb_data *cbdata
           = (struct unit_sel_extra_cb_data *)userdata;
 
+  log_normal("unit_sel_extra_toggled(): dialog data 'target' was %d", 
+             GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cbdata->dlg), "target")));
+
   if (gtk_toggle_button_get_active(tb)) {
     g_object_set_data(G_OBJECT(cbdata->dlg), "target",
                       GINT_TO_POINTER(cbdata->tp_id));
   }
+
+  log_normal("unit_sel_extra_toggled(): dialog data 'target' set to %d", 
+             cbdata->tp_id);
+
 }
+
+#if 0
+/************************************************************************//**
+  Callback to handle clicking of one of the target extra buttons.
+****************************************************************************/
+static void unit_sel_extra_clicked(GtkToggleButton *tb, gpointer userdata)
+{
+  struct unit_sel_extra_cb_data *cbdata
+          = (struct unit_sel_extra_cb_data *)userdata;
+
+  log_normal("unit_sel_extra_clicked(): button for target %d was clicked.",
+             cbdata->tp_id);
+
+  log_normal("unit_sel_extra_clicked(): dialog data 'target' was %d", 
+             GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cbdata->dlg), "target")));
+
+  if (gtk_toggle_button_get_active(tb)) {
+    g_object_set_data(G_OBJECT(cbdata->dlg), "target",
+                      GINT_TO_POINTER(cbdata->tp_id));
+    log_normal("unit_sel_extra_clicked(): dialog data 'target' set to %d", 
+               cbdata->tp_id);
+  }
+
+}
+#endif
 
 /************************************************************************//**
   Callback to handle destruction of one of the target extra buttons.
@@ -120,6 +152,7 @@ bool select_tgt_extra(struct unit *actor, struct tile *ptile,
   GtkWidget *sep;
   GtkWidget *radio;
   GtkWidget *default_option = NULL;
+  int default_target = -1;  /* 0 would already be a valid extra */
   GtkWidget *first_option = NULL;
   struct sprite *spr;
   struct unit_type *actor_type = unit_type_get(actor);
@@ -163,11 +196,13 @@ bool select_tgt_extra(struct unit *actor, struct tile *ptile,
   lbl = gtk_label_new(tgt_label);
   gtk_container_add(GTK_CONTAINER(main_box), lbl);
 
-  box = gtk_grid_new();
+  //box = gtk_grid_new();
+  GtkWidget *outerbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
   tcount = 0;
   extra_type_iterate(ptgt) {
     GdkPixbuf *tubuf;
+    GtkWidget *innerbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 
     if (!BV_ISSET(potential_tgt_extras, extra_number(ptgt))) {
       continue;
@@ -179,12 +214,20 @@ bool select_tgt_extra(struct unit *actor, struct tile *ptile,
     cbdata->tp_id = ptgt->id;
     cbdata->dlg = dlg;
 
+    //radio = gtk_radio_button_new_with_label_from_widget(
+    //      GTK_RADIO_BUTTON(first_option),
+    //      tgt_extra_descr(ptgt, ptile));
     radio = gtk_radio_button_new_from_widget(
           GTK_RADIO_BUTTON(first_option));
+
     if (first_option == NULL) {
       first_option = radio;
       default_option = first_option;
+      default_target = ptgt->id;
     }
+    
+    log_normal("select_tgt_extra(): created button, active status = %d",
+               gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio)));
     /* The lists must be the same length if they contain the same
      * elements. */
     fc_assert_msg(g_slist_length(gtk_radio_button_get_group(
@@ -193,14 +236,18 @@ bool select_tgt_extra(struct unit *actor, struct tile *ptile,
                                       GTK_RADIO_BUTTON(first_option))),
                   "The radio button for '%s' is broken.",
                   extra_rule_name(ptgt));
+    //g_signal_connect(radio, "clicked",
+    //                G_CALLBACK(unit_sel_extra_clicked), cbdata);
     g_signal_connect(radio, "toggled",
                      G_CALLBACK(unit_sel_extra_toggled), cbdata);
     g_signal_connect(radio, "destroy",
                      G_CALLBACK(unit_sel_extra_destroyed), cbdata);
     if (ptgt == suggested_tgt_extra) {
       default_option = radio;
+      default_target = ptgt->id;
     }
-    gtk_grid_attach(GTK_GRID(box), radio, 0, tcount, 1, 1);
+    //gtk_grid_attach(GTK_GRID(box), radio, 0, tcount, 1, 1);
+    gtk_box_pack_start(GTK_BOX(outerbox), radio, TRUE, FALSE, 0);
 
     tubuf = create_extra_pixbuf(ptgt);
     if (tubuf != NULL) {
@@ -209,26 +256,93 @@ bool select_tgt_extra(struct unit *actor, struct tile *ptile,
     } else {
       icon = gtk_image_new();
     }
-    gtk_grid_attach(GTK_GRID(box), icon, 1, tcount, 1, 1);
+    //gtk_button_set_image(GTK_BUTTON(radio), icon);
+    //gtk_button_set_always_show_image(GTK_BUTTON(radio), TRUE);
+    
+    //gtk_grid_attach(GTK_GRID(buttonbox), icon, 1, 0, 1, 1);
+    gtk_box_pack_start(GTK_BOX(innerbox), icon, TRUE, FALSE, 0);
+
 
     lbl = gtk_label_new(tgt_extra_descr(ptgt, ptile));
-    gtk_grid_attach(GTK_GRID(box), lbl, 2, tcount, 1, 1);
+    //gtk_grid_attach(GTK_GRID(buttonbox), lbl, 2, 0, 1, 1);
+    
+    gtk_box_pack_start(GTK_BOX(innerbox), lbl, TRUE, FALSE, 0);
+    
+    gtk_container_add(GTK_CONTAINER(radio), innerbox);
 
     tcount++;
+
+
+#if 0
+    if(GTK_IS_RADIO_BUTTON(radio)) {
+      log_normal("select_tgt_extra(): radio button is radio button");
+    }
+
+    if(GTK_IS_BUTTON(radio)) {
+      log_normal("select_tgt_extra(): radio button is button");
+    }
+
+    if(GTK_IS_BIN(radio)) {
+      log_normal("select_tgt_extra(): radio button is a Bin");
+    }
+
+    if(GTK_IS_CONTAINER(radio)) {
+      log_normal("select_tgt_extra(): radio button is container");
+    }
+#endif
+ 
+    GtkWidget *widget = radio;
+    log_normal("select_tgt_extra(): children of radio button:");
+
+    while (GTK_IS_BIN(widget)) {
+      GtkWidget *child = gtk_bin_get_child(GTK_BIN(widget));
+      log_normal("select_tgt_extra(): ... %s",
+                 G_OBJECT_TYPE_NAME(child));
+      widget = child;
+
+    }
+    if (GTK_IS_CONTAINER(widget)) {
+      log_normal("select_tgt_extra(): that's a container, children:");
+      GList *children = gtk_container_get_children(GTK_CONTAINER(widget));
+      GList *l = children;
+      for ( ; l != NULL ; l = l->next ) {
+        log_normal("select_tgt_extra(): ... %s",
+                 G_OBJECT_TYPE_NAME(GTK_WIDGET(l->data)));
+      }
+    } 
+/*
+    if(GTK_IS_BIN(radio)) {
+      GtkWidget *child = gtk_bin_get_child(GTK_BIN(radio));
+      log_normal("select_tgt_extra(): child of radio button is %s",
+                 G_OBJECT_TYPE_NAME(child));
+    }
+*/
+    
   } extra_type_iterate_end;
-  gtk_container_add(GTK_CONTAINER(main_box), box);
+  gtk_container_add(GTK_CONTAINER(main_box), outerbox);
 
   fc_assert_ret_val(default_option, FALSE);
+  
+  log_normal("select_tgt_extra(): default button active status = %d",
+             gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(default_option)));
+  
+  //gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radio), TRUE);
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(default_option), TRUE);
-
+  //gtk_toggle_button_toggled(GTK_TOGGLE_BUTTON(default_option));
+  //gtk_toggle_button_toggled(GTK_TOGGLE_BUTTON(default_option));
+  
   gtk_container_add(
               GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))),
               main_box);
 
   g_object_set_data(G_OBJECT(dlg), "actor", GINT_TO_POINTER(actor->id));
   g_object_set_data(G_OBJECT(dlg), "tile", ptile);
+  g_object_set_data(G_OBJECT(dlg), "target", GINT_TO_POINTER(default_target));
 
   g_signal_connect(dlg, "response", do_callback, actor);
+
+  log_normal("select_tgt_extra(): dialog data 'target' = %d", 
+             GPOINTER_TO_INT(g_object_get_data(G_OBJECT(dlg), "target")));
 
   gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(dlg)));
   gtk_widget_show(dlg);

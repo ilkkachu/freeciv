@@ -313,6 +313,7 @@ static void pillage_callback(GtkWidget *dlg, gint arg)
 {
   is_showing_pillage_dialog = FALSE;
 
+
   if (arg == GTK_RESPONSE_YES) {
     int act_id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(dlg),
                                                    "actor"));
@@ -320,6 +321,10 @@ static void pillage_callback(GtkWidget *dlg, gint arg)
 
     int tgt_id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(dlg),
                                                    "target"));
+
+    log_normal("pillage_callback(): target id = %d\n", tgt_id);
+
+
     struct extra_type *tgt_extra = extra_by_number(tgt_id);
 
     if (actor && tgt_extra) {
