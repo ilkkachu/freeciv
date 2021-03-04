@@ -337,6 +337,13 @@ void really_handle_city_buy(struct player *pplayer, struct city *pcity)
     return;
   }
 
+  if (VUT_IMPROVEMENT == pcity->production.kind 
+      && improvement_obsolete(pplayer, pcity->production.value.building, pcity)) {
+    notify_player(pplayer, pcity->tile, E_BAD_COMMAND, ftc_server,
+                  _("Can't buy an obsolete improvement."));
+    return;
+  }
+
   total = city_production_build_shield_cost(pcity);
   cost = city_production_buy_gold_cost(pcity);
   if (cost <= 0) {
