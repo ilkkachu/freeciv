@@ -461,6 +461,29 @@ bool send_tile_suppression(bool now)
 }
 
 /**************************************************************************
+  Tell if the if the player should know continent number of a tile.
+  Returns true for cities owned by the player and cities the player
+  trades with, false for other cities and tiles with no cities.
+**************************************************************************/
+bool tile_continent_known(struct player *pplayer, struct tile *ptile)
+{
+  struct city *pcity = tile_city(ptile);
+  struct player *owner = tile_owner(ptile);
+  if (! pcity) {
+    return FALSE;
+  }
+  if (owner == pplayer) {
+    return TRUE;
+  }
+  trade_routes_iterate(pcity, trade_city) {
+    if (city_owner(trade_city) == pplayer) {
+      return TRUE;
+    }
+  } trade_routes_iterate_end;
+  return FALSE;
+}
+
+/**************************************************************************
   Send tile information to all the clients in dest which know and see
   the tile. If dest is NULL, sends to all clients (game.est_connections)
   which know and see tile.
@@ -500,9 +523,10 @@ void send_tile_info(struct conn_list *dest, struct tile *ptile,
 
     if (!pplayer || map_is_known_and_seen(ptile, pplayer, V_MAIN)) {
       info.known = TILE_KNOWN_SEEN;
-      info.continent = tile_continent(ptile);
       owner = tile_owner(ptile);
       eowner = extra_owner(ptile);
+      info.continent = (tile_continent_known(pplayer, ptile)
+                        ? tile_continent(ptile) : 0);
       info.owner = (owner ? player_number(owner) : MAP_TILE_OWNER_NULL);
       info.extras_owner = (eowner ? player_number(eowner) : MAP_TILE_OWNER_NULL);
       info.worked = (NULL != tile_worked(ptile))
@@ -531,7 +555,10 @@ void send_tile_info(struct conn_list *dest, struct tile *ptile,
       struct vision_site *psite = map_get_player_site(ptile, pplayer);
 
       info.known = TILE_KNOWN_UNSEEN;
-      info.continent = tile_continent(ptile);
+      // info.continent = tile_continent(ptile);
+      info.continent = (tile_continent_known(pplayer, ptile)
+                        ? tile_continent(ptile) : 0);
+      info.continent = 0;
       owner = (game.server.foggedborders
                ? plrtile->owner
                : tile_owner(ptile));
