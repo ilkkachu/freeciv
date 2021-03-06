@@ -984,10 +984,12 @@ static void reestablish_city_trade_routes(struct city *pcity)
     send_city_info(city_owner(ptrade_city), ptrade_city);
 
     /* Give the new owner infos about the city which has a trade route
-     * with the transferred city. */
+     * with the transferred city. Also send tile to update
+     * continent id. */
     reality_check_city(city_owner(pcity), ptrade_city->tile);
     update_dumb_city(city_owner(pcity), ptrade_city);
     send_city_info(city_owner(pcity), ptrade_city);
+    send_tile_info(city_owner(pcity)->connections, city_tile(ptrade_city), FALSE);
   } trade_routes_iterate_end;
 }
 
