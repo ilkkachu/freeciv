@@ -404,12 +404,15 @@ void report_wonders_of_the_world(struct conn_list *dest)
   char buffer[4096];
 
   buffer[0] = '\0';
-
+  bool any_great = FALSE;
+  
+  cat_snprintf(buffer, sizeof(buffer), "== %s ==\n", _("Great Wonders"));
   improvement_iterate(i) {
     if (is_great_wonder(i)) {
       struct city *pcity = city_from_great_wonder(i);
 
       if (pcity) {
+        any_great = TRUE;
         if (player_count() > team_count()) {
           /* There exists a team with more than one member. */
           char team_name[2 * MAX_LEN_NAME];
@@ -430,6 +433,7 @@ void report_wonders_of_the_world(struct conn_list *dest)
                        nation_adjective_for_player(city_owner(pcity)));
         }
       } else if (great_wonder_is_destroyed(i)) {
+        any_great = TRUE;
         cat_snprintf(buffer, sizeof(buffer), _("%s has been DESTROYED\n"),
                      improvement_name_translation(i));
       }
@@ -442,6 +446,7 @@ void report_wonders_of_the_world(struct conn_list *dest)
         city_list_iterate(pplayer->cities, pcity) {
           if (VUT_IMPROVEMENT == pcity->production.kind
            && pcity->production.value.building == i) {
+            any_great = TRUE;
             if (player_count() > team_count()) {
               /* There exists a team with more than one member. */
               char team_name[2 * MAX_LEN_NAME];
@@ -462,6 +467,32 @@ void report_wonders_of_the_world(struct conn_list *dest)
           }
         } city_list_iterate_end;
       } players_iterate_end;
+    }
+  } improvement_iterate_end;
+
+  if (! any_great) {
+    /* TRANS: shown as "(none)" if there are no Great Wonders */
+    cat_snprintf(buffer, sizeof(buffer), "(%s)\n", _("none"));
+  }
+
+  cat_snprintf(buffer, sizeof(buffer), "\n== %s ==\n", _("Small Wonders"));
+
+  improvement_iterate(i) {
+    if (is_small_wonder(i)) {
+      int count = 0;
+      players_iterate(pplayer) {
+        if (wonder_is_built(pplayer, i)) {
+          count += 1;
+        }
+      } players_iterate_end;
+      if (count > 0) {
+        cat_snprintf(buffer, sizeof(buffer),
+                     /* TRANS: "Pyramids in 5 nation(s)" */
+                     PL_("%s in %d nation\n", 
+                         "%s in %d nations\n",
+                         count),
+                     improvement_name_translation(i), count);
+      }
     }
   } improvement_iterate_end;
 
