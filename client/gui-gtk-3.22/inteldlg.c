@@ -78,6 +78,7 @@ struct intel_dialog {
 
   GtkTreeStore *diplstates;
   GtkListStore *techs;
+  GtkListStore *wonders;
   GtkWidget *table_labels[LABEL_LAST];
 };
 
@@ -287,6 +288,42 @@ static struct intel_dialog *create_intel_dialog(struct player *p)
   label = gtk_label_new_with_mnemonic(_("_Techs"));
   gtk_notebook_append_page(GTK_NOTEBOOK(notebook), sw, label);
 
+  /* wonders tab. */
+  pdialog->wonders = gtk_list_store_new(2, G_TYPE_BOOLEAN, G_TYPE_STRING);
+  gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(pdialog->wonders),
+      1, GTK_SORT_ASCENDING);
+
+  view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(pdialog->wonders));
+  g_object_set(view, "margin", 6, NULL);
+  gtk_widget_set_hexpand(view, TRUE);
+  gtk_widget_set_vexpand(view, TRUE);
+  g_object_unref(pdialog->wonders);
+  gtk_container_set_border_width(GTK_CONTAINER(view), 6);
+  gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), FALSE);
+
+  rend = gtk_cell_renderer_toggle_new();
+  col = gtk_tree_view_column_new_with_attributes(NULL, rend,
+    "active", 0, NULL);
+  gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+
+  rend = gtk_cell_renderer_text_new();
+  col = gtk_tree_view_column_new_with_attributes(NULL, rend,
+    "text", 1, NULL);
+  gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+
+  sw = gtk_scrolled_window_new(NULL,NULL);
+  gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw),
+				      GTK_SHADOW_ETCHED_IN);
+  gtk_container_add(GTK_CONTAINER(sw), view);
+
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),
+	GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+
+  label = gtk_label_new_with_mnemonic(_("_Wonders"));
+  gtk_notebook_append_page(GTK_NOTEBOOK(notebook), sw, label);
+
+
+
   gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(shell)));
 
   dialog_list_prepend(dialog_list, pdialog);
@@ -310,6 +347,7 @@ void update_intel_dialog(struct player *p)
     struct player *me = client_player();
     bool embassy_knowledge = global_observer || player_has_embassy(me, p);
     bool trade_knowledge = global_observer || p == me || could_intel_with_player(me, p);
+    // struct improvement *impr = NULL;
 
     /* window title. */
     gchar *title = g_strdup_printf(_("Foreign Intelligence: %s Empire"),
@@ -369,6 +407,22 @@ void update_intel_dialog(struct player *p)
       }
     } advance_index_iterate_end;
 
+    /* wonders tab. */
+    gtk_list_store_clear(pdialog->wonders);
+
+    improvement_iterate(impr) {
+      if (is_wonder(impr) && wonder_is_built(p, impr)) {
+        bool is_great = is_great_wonder(impr);
+        GtkTreeIter it;
+        gtk_list_store_append(pdialog->wonders, &it);
+
+        gtk_list_store_set(pdialog->wonders, &it,
+                           0, is_great,
+                           1, improvement_rule_name(impr),
+                           -1);
+      }
+    } improvement_iterate_end;
+    
     /* table labels. */
     for (i = 0; i < ARRAY_SIZE(pdialog->table_labels); i++) {
       if (pdialog->table_labels[i]) {
