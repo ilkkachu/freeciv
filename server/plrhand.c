@@ -1076,9 +1076,8 @@ static void package_player_common(struct player *plr,
   packet->nturns_idle=plr->nturns_idle;
 
   for (i = 0; i < B_LAST/*improvement_count()*/; i++) {
-    /* Actually filled in package_player_info() */
-      packet->wonders[i] = 0;
-  } 
+    packet->wonders[i] = plr->wonders[i];
+  }
   packet->science_cost = plr->ai_common.science_cost;
 }
 
@@ -1099,7 +1098,6 @@ static void package_player_info(struct player *plr,
   enum plr_info_level info_level;
   enum plr_info_level highest_team_level;
   struct government *pgov = NULL;
-  int i;
 
   if (receiver) {
     info_level = player_info_level(plr, receiver);
@@ -1239,18 +1237,6 @@ static void package_player_info(struct player *plr,
   } else {
     packet->history         = 0;
   }
-
-  for (i = 0; i < B_LAST/*improvement_count()*/; i++) {
-    /* Don't leak info on small wonders */
-    struct impr_type *impr = improvement_by_number(i);
-    if (! impr || ! is_wonder(impr)) {
-      packet->wonders[i] = 0;
-    } else if (is_great_wonder(impr)
-               || (is_small_wonder(impr) && info_level >= INFO_FULL)) {
-      packet->wonders[i] = plr->wonders[i];
-    }
-  }
-
 }
 
 /**************************************************************************
