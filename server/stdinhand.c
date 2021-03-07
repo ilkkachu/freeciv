@@ -7231,6 +7231,7 @@ static const int filename_cmd[] = {
   CMD_SAVE,
   CMD_READ_SCRIPT,
   CMD_WRITE_SCRIPT,
+  CMD_RULESETDIR,
   -1
 };
 
