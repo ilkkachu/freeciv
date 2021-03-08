@@ -289,7 +289,8 @@ static struct intel_dialog *create_intel_dialog(struct player *p)
   gtk_notebook_append_page(GTK_NOTEBOOK(notebook), sw, label);
 
   /* wonders tab. */
-  pdialog->wonders = gtk_list_store_new(2, G_TYPE_BOOLEAN, G_TYPE_STRING);
+//  pdialog->wonders = gtk_list_store_new(2, G_TYPE_BOOLEAN, G_TYPE_STRING);
+  pdialog->wonders = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
   gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(pdialog->wonders),
       1, GTK_SORT_ASCENDING);
 
@@ -301,15 +302,22 @@ static struct intel_dialog *create_intel_dialog(struct player *p)
   gtk_container_set_border_width(GTK_CONTAINER(view), 6);
   gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), FALSE);
 
-  rend = gtk_cell_renderer_toggle_new();
-  col = gtk_tree_view_column_new_with_attributes(NULL, rend,
-    "active", 0, NULL);
+//  rend = gtk_cell_renderer_toggle_new();
+//  col = gtk_tree_view_column_new_with_attributes(NULL, rend,
+//    "active", 0, NULL);
+//  gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+
+
+  rend = gtk_cell_renderer_text_new();
+  col = gtk_tree_view_column_new_with_attributes("Type", rend,
+    "text", 0, NULL);
   gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 
   rend = gtk_cell_renderer_text_new();
-  col = gtk_tree_view_column_new_with_attributes(NULL, rend,
+  col = gtk_tree_view_column_new_with_attributes("Wonder", rend,
     "text", 1, NULL);
   gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+  
 
   sw = gtk_scrolled_window_new(NULL,NULL);
   gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw),
@@ -417,8 +425,10 @@ void update_intel_dialog(struct player *p)
         gtk_list_store_append(pdialog->wonders, &it);
 
         gtk_list_store_set(pdialog->wonders, &it,
-                           0, is_great,
+                           0, is_great ? "(*)" : "",
+//                           1, improvement_rule_name(impr),
                            1, improvement_rule_name(impr),
+
                            -1);
       }
     } improvement_iterate_end;
