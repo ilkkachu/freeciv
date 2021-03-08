@@ -3243,12 +3243,15 @@ static bool do_unit_establish_trade(struct player *pplayer,
     } city_list_iterate_end;
 
     /* Notify each player about the other cities so that they know about
-     * its size for the trade calculation. */
+     * its size for the trade calculation. Also send tile info to
+     * update the continent id. */
     if (pplayer != partner_player) {
       reality_check_city(partner_player, city_tile(pcity_homecity));
       send_city_info(partner_player, pcity_homecity);
+      send_tile_info(partner_player->connections, city_tile(pcity_homecity), FALSE);
       reality_check_city(pplayer, city_tile(pcity_dest));
       send_city_info(pplayer, pcity_dest);
+      send_tile_info(pplayer->connections, city_tile(pcity_dest), FALSE);
     }
 
     city_list_iterate(cities_out_of_home, pcity) {

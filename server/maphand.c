@@ -558,7 +558,7 @@ void send_tile_info(struct conn_list *dest, struct tile *ptile,
       // info.continent = tile_continent(ptile);
       info.continent = (tile_continent_known(pplayer, ptile)
                         ? tile_continent(ptile) : 0);
-      info.continent = 0;
+      // info.continent = 0;
       owner = (game.server.foggedborders
                ? plrtile->owner
                : tile_owner(ptile));
