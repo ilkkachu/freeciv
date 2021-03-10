@@ -70,6 +70,9 @@ struct research {
     /* One of TECH_UNKNOWN, TECH_KNOWN or TECH_PREREQS_KNOWN. */
     enum tech_state state;
 
+    /* Turn number on which the tech was researched */
+    int turn_discovered;
+
     /* Following fields are cached values. They are updated by
      * research_update()). */
     bool reachable;

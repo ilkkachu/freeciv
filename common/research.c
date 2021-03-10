@@ -488,6 +488,7 @@ enum tech_state research_invention_set(struct research *presearch,
 
   if (value == TECH_KNOWN) {
     game.info.global_advances[tech] = TRUE;
+    presearch->inventions[tech].turn_discovered = game.info.turn;
   }
   return old;
 }
