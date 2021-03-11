@@ -2131,7 +2131,7 @@ static bool city_build_building(struct player *pplayer, struct city *pcity)
 {
   bool space_part;
   int mod;
-  struct impr_type *pimprove = NULL;
+  struct impr_type *pimprove = pcity->production.value.building;
   int saved_id = pcity->id;
 
   if (city_production_has_flag(pcity, IF_GOLD)) {
@@ -2144,12 +2144,7 @@ static bool city_build_building(struct player *pplayer, struct city *pcity)
     choose_build_target(pplayer, pcity);
     return TRUE;
   }
-
-  /* check if building has become obsolete since last time. */
-  if (city_can_change_build(pcity)) {
-    upgrade_building_prod(pcity);
-  }
-  pimprove = pcity->production.value.building;
+  upgrade_building_prod(pcity);
 
   if (!can_city_build_improvement_now(pcity, pimprove)) {
     notify_player(pplayer, city_tile(pcity), E_CITY_CANTBUILD, ftc_server,
