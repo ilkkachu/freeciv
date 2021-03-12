@@ -78,6 +78,7 @@ struct intel_dialog {
 
   GtkTreeStore *diplstates;
   GtkListStore *techs;
+  GtkListStore *wonders;
   GtkWidget *table_labels[LABEL_LAST];
 };
 
@@ -287,6 +288,51 @@ static struct intel_dialog *create_intel_dialog(struct player *p)
   label = gtk_label_new_with_mnemonic(_("_Techs"));
   gtk_notebook_append_page(GTK_NOTEBOOK(notebook), sw, label);
 
+  /* wonders tab. */
+  /* columns: 0 - wonder name, 1 - location (city/unknown/lost),
+   * 2 - strikethrough (for lost or obsolete),
+   * 3 - font weight (great wonders in bold) */
+  pdialog->wonders = gtk_list_store_new(4, G_TYPE_STRING, 
+                                        G_TYPE_STRING, 
+                                        G_TYPE_BOOLEAN,
+                                        G_TYPE_INT);
+  gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(pdialog->wonders),
+                                       3, GTK_SORT_DESCENDING);
+
+  view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(pdialog->wonders));
+  g_object_set(view, "margin", 6, NULL);
+  gtk_widget_set_hexpand(view, TRUE);
+  gtk_widget_set_vexpand(view, TRUE);
+  g_object_unref(pdialog->wonders);
+  gtk_container_set_border_width(GTK_CONTAINER(view), 6);
+  gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), FALSE);
+
+  rend = gtk_cell_renderer_text_new();
+  gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, NULL,
+                                              rend, "text", 0,
+                                              "strikethrough", 2,
+                                              "weight", 3,
+                                              NULL); 
+
+  rend = gtk_cell_renderer_text_new();
+  gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, NULL,
+                                              rend, "text", 1,
+                                              NULL);      
+
+  sw = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw),
+                                      GTK_SHADOW_ETCHED_IN);
+  gtk_container_add(GTK_CONTAINER(sw), view);
+
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),
+                                 GTK_POLICY_AUTOMATIC, 
+                                 GTK_POLICY_AUTOMATIC);
+
+  /* TRANS: Wonders tab of foreign intelligence report dialog */
+  label = gtk_label_new_with_mnemonic(_("_Wonders"));
+  gtk_notebook_append_page(GTK_NOTEBOOK(notebook), sw, label);
+
+
   gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(shell)));
 
   dialog_list_prepend(dialog_list, pdialog);
@@ -369,6 +415,43 @@ void update_intel_dialog(struct player *p)
       }
     } advance_index_iterate_end;
 
+    /* wonders tab. */
+    gtk_list_store_clear(pdialog->wonders);
+
+    improvement_iterate(impr) {
+      if (is_wonder(impr)) {
+        GtkTreeIter it;
+        const char *cityname;
+        bool is_lost = FALSE;
+        
+        if (wonder_is_built(p, impr)) {
+          struct city *pcity = city_from_wonder(p, impr);
+          if (pcity) {
+            cityname = city_name_get(pcity);
+          } else {
+            cityname = _("(unknown city)");
+          }
+          if (improvement_obsolete(p, impr, NULL)) {
+            is_lost = TRUE;
+          }
+        } else if (wonder_is_lost(p, impr)) {
+          cityname = _("(lost)");
+          is_lost = TRUE;
+        } else {
+          continue;
+        }
+    
+        gtk_list_store_append(pdialog->wonders, &it);
+        gtk_list_store_set(pdialog->wonders, &it,
+                           0, improvement_name_translation(impr),
+                           1, cityname,
+                           2, is_lost,
+                           /* font weight: great wonders in bold */
+                           3, is_great_wonder(impr) ? 700 : 400,
+                           -1);
+      }
+    } improvement_iterate_end;
+    
     /* table labels. */
     for (i = 0; i < ARRAY_SIZE(pdialog->table_labels); i++) {
       if (pdialog->table_labels[i]) {
