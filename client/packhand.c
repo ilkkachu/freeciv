@@ -522,6 +522,34 @@ void handle_unit_combat_info(int attacker_unit_id, int defender_unit_id,
 }
 
 /**************************************************************************
+  Updates the list of a player's wonders from a city information packet.
+**************************************************************************/
+static bool update_wonders_from_packet(struct city *pcity,
+                                       struct impr_type *pimprove,
+                                       bool have_impr)
+{
+  if (is_small_wonder(pimprove)) {
+    struct player *pplayer = city_owner(pcity);
+    if (have_impr) {
+      log_normal("small wonder %s seen in city %s", 
+                 improvement_rule_name(pimprove), city_name_get(pcity));
+      if (pplayer->wonders[improvement_index(pimprove)] != pcity->id) {
+        pplayer->wonders[improvement_index(pimprove)] = pcity->id;
+        log_normal("  that was a new sighting...");
+      }
+    } else {
+      log_normal("small wonder %s is not in city %s", 
+                 improvement_rule_name(pimprove), city_name_get(pcity));
+      if (pplayer->wonders[improvement_index(pimprove)] == pcity->id) {
+        pplayer->wonders[improvement_index(pimprove)] = WONDER_LOST;
+        log_normal("  it has disappeared...");
+      }
+    }
+  }
+  return TRUE;
+}
+
+/**************************************************************************
   Updates a city's list of improvements from packet data.
   "have_impr" specifies whether the improvement should be added (TRUE)
   or removed (FALSE). Returns TRUE if the improvement has been actually
@@ -1005,6 +1033,9 @@ void handle_city_short_info(const struct packet_city_short_info *packet)
   fc_assert_ret_msg(NULL != powner, "Bad player number %d.", packet->owner);
   fc_assert_ret_msg(NULL != pcenter, "Invalid tile index %d.", packet->tile);
 
+  log_normal("handle_city_short_info() called for city %s",
+             pcity ? city_name_get(pcity) : "(?)");
+
   if (NULL != pcity) {
     ptile = city_tile(pcity);
 
@@ -1100,7 +1131,10 @@ void handle_city_short_info(const struct packet_city_short_info *packet)
     if (is_improvement_visible(pimprove)) {
       bool have = BV_ISSET(packet->improvements,
                            improvement_index(pimprove));
+      //log_normal("  city does %s have visible improvement %s",
+      //           have ? "   " : "not", improvement_rule_name(pimprove));
       update_improvement_from_packet(pcity, pimprove, have);
+      update_wonders_from_packet(pcity, pimprove, have);
     }
   } improvement_iterate_end;
 
@@ -2286,7 +2320,21 @@ void handle_player_info(const struct packet_player_info *pinfo)
   pplayer->is_connected = pinfo->is_connected;
 
   for (i = 0; i < B_LAST; i++) {
-    pplayer->wonders[i] = pinfo->wonders[i];
+    struct impr_type *pimpr = improvement_by_number(i);
+    if (!pimpr) {
+      continue;
+    }
+    /* Info on great wonders always sent here, so update unconditionally.
+     * For small wonders, WONDER_NOT_BUILT could mean the server
+     * doesn't tell here. In that case, don't override the info we
+     * may have picked from city information packets. */
+    if (is_great_wonder(pimpr)) {
+      pplayer->wonders[i] = pinfo->wonders[i];
+    } else if (is_small_wonder(pimpr)) {
+      if (pinfo->wonders[i] != WONDER_NOT_BUILT) {
+        pplayer->wonders[i] = pinfo->wonders[i];
+      }
+    }
   }
 
   /* Set AI.control. */
