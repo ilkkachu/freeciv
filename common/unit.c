@@ -1553,9 +1553,15 @@ bool is_my_zoc(const struct player *pplayer, const struct tile *ptile0)
 {
   struct terrain *pterrain;
   bool srv = is_server();
+  bool center_ocean = is_ocean_tile(ptile0);
 
   square_iterate(ptile0, 1, ptile) {
     struct city *pcity;
+
+    /* no ZOC from ocean to land, or vice versa */
+    if (center_ocean != is_ocean_tile(ptile)) {
+      continue;
+    }
 
     pterrain = tile_terrain(ptile);
     if (T_UNKNOWN == pterrain
@@ -1575,7 +1581,8 @@ bool is_my_zoc(const struct player *pplayer, const struct tile *ptile0)
     } else {
       unit_list_iterate(ptile->units, punit) {
         if (!pplayers_allied(unit_owner(punit), pplayer)
-            && !unit_has_type_flag(punit, UTYF_NOZOC)) {
+            && !unit_has_type_flag(punit, UTYF_NOZOC)
+            && is_native_tile(unit_type_get(punit), ptile)) {
           return FALSE;
         }
       } unit_list_iterate_end;
