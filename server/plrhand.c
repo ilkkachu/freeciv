@@ -1076,7 +1076,11 @@ static void package_player_common(struct player *plr,
   packet->nturns_idle=plr->nturns_idle;
 
   for (i = 0; i < B_LAST/*improvement_count()*/; i++) {
-    packet->wonders[i] = plr->wonders[i];
+    struct impr_type *pimpr = improvement_by_number(i);
+    packet->wonders[i] = WONDER_NOT_BUILT;
+    if (pimpr && is_great_wonder(pimpr)) {
+      packet->wonders[i] = plr->wonders[i];
+    }
   }
   packet->science_cost = plr->ai_common.science_cost;
 }
