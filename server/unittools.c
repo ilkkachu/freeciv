@@ -319,7 +319,11 @@ void combat_veterans(struct unit *attacker, struct unit *defender)
   if (attacker->hp > 0) {
     maybe_make_veteran(attacker); 
   } else if (defender->hp > 0) {
-    maybe_make_veteran(defender); 
+    /* Don't give veteran levels for surviving a missile strike,
+     * similar to how surviving bombardment also doesn't */
+    if (! uclass_has_flag(unit_class_get(attacker), UCF_MISSILE)) {
+      maybe_make_veteran(defender); 
+    }
   }
 }
 
