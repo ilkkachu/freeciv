@@ -2256,7 +2256,12 @@ static bool unit_bombard(struct unit *punit, struct tile *ptile)
     send_city_info(NULL, pcity);
   }
 
-  send_unit_info(NULL, punit);
+  if (uclass_has_flag(unit_class_get(punit), UCF_MISSILE)) {
+    wipe_unit(punit, ULR_MISSILE, NULL);
+  } else {
+    send_unit_info(NULL, punit);
+  }
+
   return TRUE;
 }
 
